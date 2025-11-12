@@ -103,6 +103,22 @@ class Game:
                         self.sent.add(x)
                         self.n.send({"category": "POSITION", "payload": x})
         self.opponent.draw_grid(self.screen)
+        # Draw HUD: remaining ship segments for player and opponent
+        try:
+            player_left = self.count_remaining_segments(self.player.grid)
+            opp_left = self.count_remaining_segments(self.opponent.grid)
+        except Exception:
+            player_left = "-"
+            opp_left = "-"
+
+        hud_font = pygame.font.Font("client/assets/retrofont.ttf", 14)
+        left_text = hud_font.render(f"Your segments: {player_left}", True, WHITE)
+        right_text = hud_font.render(f"Opponent segments: {opp_left}", True, WHITE)
+        # draw left aligned
+        self.screen.blit(left_text, (8, 0))
+        # draw right aligned
+        self.screen.blit(right_text, (450 - right_text.get_width() - 8, 0))
+
         self.draw_chat()
 
     def game_over_screen(self):
@@ -211,6 +227,15 @@ class Game:
         pygame.draw.rect(self.screen, WHITE, self.send_button, 2)
         send_text = self.small_font.render("Send", True, WHITE)
         self.screen.blit(send_text, (self.send_button.x + 20, self.send_button.y + 3))
+
+    def count_remaining_segments(self, grid):
+        """Count ship segments that are still not hit (for player's grid) or not revealed as hit (for opponent)."""
+        cnt = 0
+        for x in grid:
+            for sq in x:
+                if sq[ship] and not sq.get(aimed, False) and not sq.get(perma_color, False):
+                    cnt += 1
+        return cnt
     
     def handle_chat_input(self, event):
         if event.type == pygame.KEYDOWN:
