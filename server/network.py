@@ -2,6 +2,7 @@ import json
 import socket
 import string
 import random
+import os
 from threading import Lock, Thread
 
 from server.utils import layout_ships
@@ -48,9 +49,11 @@ class ServerPlayer:
 
 
 class Network:
-    server_addr = "localhost"
-    port = 1234
-    address = server_addr, port
+    # Allow overriding host/port via environment variables for easier testing and
+    # running on LAN. Defaults remain localhost:1234 for backward compatibility.
+    server_addr = os.getenv("SERVER_HOST", "localhost")
+    port = int(os.getenv("SERVER_PORT", "1234"))
+    address = (server_addr, port)
 
     def __init__(
         self, sock=socket.socket(socket.AF_INET, socket.SOCK_STREAM), is_server=True
@@ -68,11 +71,6 @@ class Network:
             print("Connected to: ", address)
 
             conn = Network(sock=conn, is_server=False)
-            # if len(self.game_list[-1].players) >= 2:
-            #     self.game_list.append(Room())
-            # self.game_list[-1].players.append(
-            #     (p := ServerPlayer(conn, self.game_list[-1]))
-            # )
             lock.acquire()
             Thread(
                 target=self.proceed_with_connection,
@@ -80,12 +78,6 @@ class Network:
             ).start()
             lock.release()
             print(self.game_list)
-            # for game in self.game_list:
-            #     if not game.sent_board:
-            #         if len(game.players) == 2:
-            #             game.send_board()
-            #             game.sent_board = True
-
     def proceed_with_connection(self, player):
         while True:
             try:
